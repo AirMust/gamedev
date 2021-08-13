@@ -1,8 +1,7 @@
-import axios, { AxiosRequestConfig } from 'axios';
+import { AxiosRequestConfig } from 'axios';
 import { ApiRequestProps, ApiResponse, ResponseStatus } from 'api/types';
 import { AUTH_TOKEN_NAME } from 'api/config';
 
-const axiosInstance = axios.create({});
 
 export const callApi: (params: ApiRequestProps) => Promise<ApiResponse> = async ({
   method,
@@ -37,10 +36,11 @@ export const callApi: (params: ApiRequestProps) => Promise<ApiResponse> = async 
       return false;
     },
   };
-
   if (authRequired && authToken) {
     requestConfig.headers.Authorization = `Token ${authToken}`;
   }
+
+  requestConfig.headers['Content-Type'] = 'application/json';
 
   if (formData) {
     requestConfig.headers['Content-Type'] = 'multipart/form-data';
@@ -54,11 +54,17 @@ export const callApi: (params: ApiRequestProps) => Promise<ApiResponse> = async 
     requestConfig.params = params;
   }
 
-  await axiosInstance(requestConfig)
+  await fetch(url, {
+    mode: 'cors',
+    credentials: 'include',
+    body: JSON.stringify(requestConfig.data),
+    ...requestConfig,
+  })
     .then((resp) => {
-      if (resp.data) {
-        response.data = resp.data;
+      if (resp.body) {
+        response.data = resp.body;
       }
+      response.data = 'OK';
     })
     .catch((error) => {
       if (error.response?.data?.reason) {
